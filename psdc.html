@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Photo Convention Vina</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+    }
+
+    canvas {
+      border: 2px solid #444;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    input, button {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    #downloadBtn, #resetBtn {
+      display: none;
+      margin: 10px;
+      background-color: #5cb85c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #downloadBtn:hover, #resetBtn:hover {
+      background-color: #4cae4c;
+    }
+
+    #resetBtn {
+      background-color: #d9534f;
+    }
+
+    #resetBtn:hover {
+      background-color: #c9302c;
+    }
+
+    #loading {
+      font-style: italic;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h2>Convention de la Vina - Ajoute ta photo !</h2>
+  <div id="loading">Chargement de l'image de fond...</div>
+  <input type="file" id="upload" accept="image/*"><br>
+  <canvas id="myCanvas" width="768" height="768"></canvas><br>
+  <button id="downloadBtn">📥 Télécharger l'image</button>
+  <button id="resetBtn">🗑️ Réinitialiser</button>
+
+  <script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    const background = new Image();
+    background.src = 'convension.jpg'; // Assure-toi que ce fichier est bien présent dans le même dossier
+    const loading = document.getElementById('loading');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const x = 510;
+    const y = 300;
+    const frameWidth = 220;
+    const frameHeight = 220;
+
+    let backgroundLoaded = false;
+
+    background.onload = () => {
+      backgroundLoaded = true;
+      loading.style.display = 'none';
+      drawBase();
+    };
+
+    function drawBase() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+      // Dessine un cadre guide blanc
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x, y, frameWidth, frameHeight);
+    }
+
+    document.getElementById('upload').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        alert("Merci d’importer une image valide !");
+        return;
+      }
+
+      if (!backgroundLoaded) {
+        alert("L’image de fond n’est pas encore chargée !");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const uploadedImage = new Image();
+        uploadedImage.onload = function () {
+          drawBase(); // Redessine le fond avec le cadre
+
+          const ratioFrame = frameWidth / frameHeight;
+          const ratioImg = uploadedImage.width / uploadedImage.height;
+
+          let srcX = 0, srcY = 0, srcWidth = uploadedImage.width, srcHeight = uploadedImage.height;
+
+          if (ratioImg > ratioFrame) {
+            srcWidth = uploadedImage.height * ratioFrame;
+            srcX = (uploadedImage.width - srcWidth) / 2;
+          } else {
+            srcHeight = uploadedImage.width / ratioFrame;
+            srcY = (uploadedImage.height - srcHeight) / 2;
+          }
+
+          ctx.drawImage(
+            uploadedImage,
+            srcX, srcY, srcWidth, srcHeight,
+            x, y, frameWidth, frameHeight
+          );
+
+          downloadBtn.style.display = 'inline-block';
+          resetBtn.style.display = 'inline-block';
+        };
+        uploadedImage.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'ma-photo-convention.png';
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      drawBase();
+      downloadBtn.style.display = 'none';
+      resetBtn.style.display = 'none';
+      document.getElementById('upload').value = '';
+    });
+  </script>
+</body>
+</html>
